@@ -29,6 +29,43 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'Public')));
 app.use(express.static(__dirname));
 
+// Smart alias routes for CSS and JS regardless of GitHub subfolder structure
+app.get('/css/styles.css', (req, res, next) => {
+  const possibleCss = [
+    path.join(__dirname, 'css', 'styles.css'),
+    path.join(__dirname, 'public', 'css', 'styles.css'),
+    path.join(__dirname, 'styles.css')
+  ];
+  for (const p of possibleCss) {
+    if (fs.existsSync(p)) return res.sendFile(p);
+  }
+  next();
+});
+
+app.get('/js/app.js', (req, res, next) => {
+  const possibleJs = [
+    path.join(__dirname, 'js', 'app.js'),
+    path.join(__dirname, 'public', 'js', 'app.js'),
+    path.join(__dirname, 'app.js')
+  ];
+  for (const p of possibleJs) {
+    if (fs.existsSync(p)) return res.sendFile(p);
+  }
+  next();
+});
+
+app.get('/js/dictionary.js', (req, res, next) => {
+  const possibleDict = [
+    path.join(__dirname, 'js', 'dictionary.js'),
+    path.join(__dirname, 'public', 'js', 'dictionary.js'),
+    path.join(__dirname, 'dictionary.js')
+  ];
+  for (const p of possibleDict) {
+    if (fs.existsSync(p)) return res.sendFile(p);
+  }
+  next();
+});
+
 // Route handler for root /
 app.get('/', (req, res) => {
   const possiblePaths = [
