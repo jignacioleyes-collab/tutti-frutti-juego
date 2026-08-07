@@ -312,7 +312,6 @@ function updateSettings() {
 
 function startGame() {
   if(state.players.length < 2) {
-    // allow testing alone, but normally require 2
     console.warn("Starting with < 2 players");
   }
   state.socket.emit('start-round');
@@ -342,13 +341,10 @@ function showLetterRevealed(letter, stoppedBy) {
   const revealed = document.getElementById('letter-revealed');
   revealed.classList.remove('hidden');
   
-  // stoppedBy is already the player name string from the server
   document.getElementById('letter-stopped-by').textContent = `Detenido por: ${stoppedBy}`;
   document.getElementById('letter-revealed-text').textContent = `¡La letra es ${letter}!`;
 
-  // Auto transition to game board
   setTimeout(() => {
-    // Reset view for next round
     letterEl.classList.remove('letter-revealed-glow');
     document.getElementById('btn-stop-letter').classList.remove('hidden');
     document.getElementById('btn-stop-letter').disabled = false;
@@ -395,13 +391,11 @@ function renderGameGrid() {
     </td>
   `).join('');
 
-  // Setup input listeners (no dropdown suggestions)
   state.settings.categories.forEach((c, i) => {
     const input = document.getElementById(`input-${i}`);
     setupInput(input, c);
   });
   
-  // Focus first input
   setTimeout(() => document.getElementById('input-0')?.focus(), 100);
 }
 
@@ -425,95 +419,7 @@ function setupInput(input, category) {
       input.classList.remove('invalid', 'valid');
     }
 
-    state.answers[category] = val; // save to state
-  });
-}
-
-function setupAutocomplete(input, dropdown, category) {
-  let selectedIndex = -1;
-
-  input.addEventListener('input', () => {
-    const val = input.value.trim();
-    
-    // Auto capitalize first letter
-    if(val.length > 0) {
-      if(val[0].toUpperCase() !== state.currentLetter) {
-        input.classList.add('invalid');
-        input.classList.remove('valid');
-      } else {
-        input.classList.remove('invalid');
-        input.classList.add('valid');
-      }
-    } else {
-      input.classList.remove('invalid', 'valid');
-    }
-
-    state.answers[category] = val; // save to state
-
-    // Dictionary matching — findSuggestions returns [{word, distance}]
-    if (val.length > 0 && typeof window.findSuggestions === 'function') {
-      const suggestions = window.findSuggestions(val, category, state.currentLetter);
-      if(suggestions && suggestions.length > 0) {
-        dropdown.innerHTML = suggestions.slice(0, 5).map((s, idx) => `
-          <div class="suggestion-item" data-index="${idx}">${highlightMatch(s.word, val)}</div>
-        `).join('');
-        dropdown.classList.add('active');
-        selectedIndex = -1;
-      } else {
-        dropdown.classList.remove('active');
-      }
-    } else {
-      dropdown.classList.remove('active');
-    }
-  });
-
-  input.addEventListener('keydown', (e) => {
-    const items = dropdown.querySelectorAll('.suggestion-item');
-    if(!dropdown.classList.contains('active') || items.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      selectedIndex = (selectedIndex + 1) % items.length;
-      updateDropdownSelection(items, selectedIndex);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      selectedIndex = (selectedIndex - 1 + items.length) % items.length;
-      updateDropdownSelection(items, selectedIndex);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if(selectedIndex >= 0) {
-        input.value = items[selectedIndex].textContent;
-        state.answers[category] = input.value;
-        input.classList.remove('invalid');
-        input.classList.add('valid');
-        dropdown.classList.remove('active');
-      }
-    } else if (e.key === 'Escape') {
-      dropdown.classList.remove('active');
-    }
-  });
-
-  dropdown.addEventListener('click', (e) => {
-    const item = e.target.closest('.suggestion-item');
-    if(item) {
-      input.value = item.textContent;
-      state.answers[category] = input.value;
-      input.classList.remove('invalid');
-      input.classList.add('valid');
-      dropdown.classList.remove('active');
-      input.focus();
-    }
-  });
-}
-
-function highlightMatch(str, match) {
-  const regex = new RegExp(`^(${match})`, 'i');
-  return str.replace(regex, `<span class="match-highlight">$1</span>`);
-}
-
-function updateDropdownSelection(items, index) {
-  items.forEach((item, i) => {
-    item.classList.toggle('selected', i === index);
+    state.answers[category] = val;
   });
 }
 
@@ -529,7 +435,6 @@ function renderStatusBadges(submittedIds = []) {
 function callTuttiFrutti() {
   if (state.hasSubmitted) return;
   
-  // Collect all values
   document.querySelectorAll('.game-table input').forEach(inp => {
     state.answers[inp.dataset.cat] = inp.value.trim();
   });
@@ -549,8 +454,6 @@ function showTuttiFruttiOverlay(playerName, seconds) {
     document.getElementById('tf-caller-name').textContent = `¡${playerName} cantó TUTTI FRUTTI!`;
     document.getElementById('tf-overlay-seconds').textContent = seconds;
     
-    // Auto submit when time runs out handled by server sending round-results,
-    // but let's submit local state immediately just in case
     document.querySelectorAll('.game-table input').forEach(inp => {
       state.answers[inp.dataset.cat] = inp.value.trim();
     });
@@ -610,20 +513,17 @@ function getOtherPlayersAnswers(category, currentPlayerId, results) {
 }
 
 function renderLeaderboard(results) {
-  // Update state players with new totals from results
   results.forEach(r => {
     const p = state.players.find(pl => pl.id === r.playerId);
     if(p) p.score = r.gameTotal;
   });
   
-  // Update header score if game screen is active
   const myPlayer = state.players.find(p => p.id === state.playerId);
   if (myPlayer) {
     const scoreEl = document.getElementById('game-player-score');
     if (scoreEl) scoreEl.textContent = `${myPlayer.score} pts`;
   }
   
-  // Sort by score DESC
   const sorted = [...state.players].sort((a,b) => b.score - a.score);
   
   document.getElementById('partial-leaderboard').innerHTML = sorted.map((p, i) => `
@@ -636,8 +536,6 @@ function renderLeaderboard(results) {
 
 // --- Game Over ---
 function renderGameOver(rankings) {
-  // rankings = [{ playerName, score, position }]
-  // Update final leaderboard list
   document.getElementById('final-leaderboard').innerHTML = rankings.map((p, i) => `
     <li>
       <span>${i === 0 ? '👑' : ''} ${i+1}. ${p.playerName}</span>
@@ -645,17 +543,14 @@ function renderGameOver(rankings) {
     </li>
   `).join('');
 
-  // Setup Podium — order is: 2nd | 1st | 3rd
   const top3 = rankings.slice(0, 3);
   
-  // 1st place (center, tallest)
   if(top3[0]) {
     document.getElementById('podium-1').querySelector('.podium-name').textContent = top3[0].playerName;
     document.getElementById('podium-1').querySelector('.podium-score').textContent = `${top3[0].score} pts`;
     document.getElementById('podium-1').style.visibility = 'visible';
   }
 
-  // 2nd place (left)
   if(top3[1]) {
     document.getElementById('podium-2').querySelector('.podium-name').textContent = top3[1].playerName;
     document.getElementById('podium-2').querySelector('.podium-score').textContent = `${top3[1].score} pts`;
@@ -664,7 +559,6 @@ function renderGameOver(rankings) {
     document.getElementById('podium-2').style.visibility = 'hidden';
   }
   
-  // 3rd place (right)
   if(top3[2]) {
     document.getElementById('podium-3').querySelector('.podium-name').textContent = top3[2].playerName;
     document.getElementById('podium-3').querySelector('.podium-score').textContent = `${top3[2].score} pts`;
@@ -712,9 +606,9 @@ function playSound(type) {
     osc.start();
     osc.stop(audioCtx.currentTime + 0.05);
   } else if (type === 'tuttifrutti') {
-    playMelody([440, 554.37, 659.25], 0.15); // A4, C#5, E5
+    playMelody([440, 554.37, 659.25], 0.15);
   } else if (type === 'win') {
-    playMelody([523.25, 659.25, 783.99, 1046.50], 0.2); // C5, E5, G5, C6
+    playMelody([523.25, 659.25, 783.99, 1046.50], 0.2);
   }
 }
 
@@ -759,7 +653,6 @@ function createConfetti() {
     const conf = document.createElement('div');
     conf.className = 'confetti-piece';
     
-    // random props
     const left = Math.random() * 100;
     const animDuration = Math.random() * 3 + 2;
     const animDelay = Math.random() * 2;
@@ -776,7 +669,6 @@ function createConfetti() {
     container.appendChild(conf);
   }
   
-  // Clean up after 6s
   setTimeout(() => {
     container.innerHTML = '';
   }, 6000);
