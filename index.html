@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutti Frutti 🍊 - El Juego Clásico Argentino</title>
+  <meta name="description" content="Jugá al clásico Tutti Frutti argentino online con amigos. Multijugador en tiempo real.">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  
+  <!-- Floating decorative background elements -->
+  <div class="bg-decor fruit-1">🍎</div>
+  <div class="bg-decor fruit-2">🍌</div>
+  <div class="bg-decor fruit-3">🍇</div>
+  <div class="bg-decor fruit-4">🍉</div>
+  <div class="bg-decor fruit-5">🍓</div>
+
+  <!-- Toast Notifications -->
+  <div id="toast-container"></div>
+  
+  <!-- Confetti Container -->
+  <div id="confetti-container"></div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="app-container">
+
+    <!-- SCREEN 1: HOME -->
+    <section id="screen-home" class="screen active">
+      <div class="glass-card home-card">
+        <h1 class="main-title">TUTTI FRUTTI <span class="emoji-bounce">🍊</span></h1>
+        <p class="subtitle">El clásico juego argentino</p>
+        
+        <div class="input-group">
+          <input type="text" id="player-name" placeholder="Tu nombre..." maxlength="15" autocomplete="off">
+        </div>
+
+        <div class="button-group">
+          <button id="btn-create-room" class="btn btn-primary btn-large">CREAR PARTIDA</button>
+          <button id="btn-show-join" class="btn btn-secondary btn-large">UNIRSE A PARTIDA</button>
+        </div>
+
+        <div id="join-room-container" class="hidden slide-down">
+          <div class="input-group mt-1rem">
+            <input type="text" id="room-code-input" placeholder="Código de 4 letras/números" maxlength="4" style="text-transform: uppercase;">
+          </div>
+          <button id="btn-join-room" class="btn btn-primary">¡UNIRME!</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: WAITING ROOM -->
+    <section id="screen-waiting" class="screen hidden">
+      <div class="glass-card waiting-card">
+        <h2>Sala de Espera</h2>
+        
+        <div class="room-code-display">
+          <span class="label">CÓDIGO DE SALA</span>
+          <div class="code-box">
+            <span id="display-room-code">----</span>
+            <button id="btn-copy-code" class="btn-icon" title="Copiar código">📋</button>
+          </div>
+        </div>
+
+        <div class="players-section">
+          <h3>Jugadores (<span id="player-count">1/6</span>)</h3>
+          <ul id="players-list" class="players-list">
+            <!-- Populated via JS -->
+          </ul>
+          <p id="waiting-message" class="waiting-message hidden">Esperando que el host inicie el juego...</p>
+        </div>
+
+        <!-- HOST SETTINGS -->
+        <div id="host-settings" class="settings-section hidden">
+          <h3>Ajustes de Partida</h3>
+          
+          <div class="setting-group">
+            <label>Rondas:</label>
+            <div class="radio-group" id="rounds-selector">
+              <label class="radio-btn"><input type="radio" name="rounds" value="5" checked> 5</label>
+              <label class="radio-btn"><input type="radio" name="rounds" value="10"> 10</label>
+              <label class="radio-btn"><input type="radio" name="rounds" value="15"> 15</label>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label>Categorías:</label>
+            <div id="categories-container" class="categories-chips">
+              <!-- Chips populated via JS -->
+            </div>
+            <div class="add-category-input">
+              <input type="text" id="new-category-input" placeholder="Nueva categoría..." maxlength="20">
+              <button id="btn-add-category" class="btn btn-small btn-secondary">+</button>
+            </div>
+          </div>
+
+          <button id="btn-start-game" class="btn btn-primary btn-large w-100 mt-1rem">INICIAR JUEGO 🚀</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: COUNTDOWN & LETTER CYCLING -->
+    <section id="screen-countdown" class="screen hidden">
+      <div class="countdown-container">
+        <div id="countdown-number" class="countdown-big-text">3</div>
+      </div>
+      <div id="letter-cycling-container" class="hidden">
+        <h2 class="phase-title">¡Elegí una letra!</h2>
+        <div class="slot-machine">
+          <div id="cycling-letter" class="letter-display">A</div>
+        </div>
+        <button id="btn-stop-letter" class="btn btn-danger btn-huge pulse">¡STOP! ✋</button>
+        <div id="letter-revealed" class="hidden">
+          <h3 id="letter-revealed-text">La letra es...</h3>
+          <p id="letter-stopped-by">Detenido por: ...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: GAME GRID -->
+    <section id="screen-game" class="screen hidden">
+      <div class="game-header glass-card-flat">
+        <div class="round-info">
+          <span id="current-round-text">Ronda 1 de 5</span>
+        </div>
+        <div class="score-box">
+          <span class="label">MIS PUNTOS</span>
+          <span id="game-player-score" class="score-big">0</span>
+        </div>
+        <div class="current-letter-box">
+          <span class="label">LETRA</span>
+          <span id="game-current-letter" class="letter-big">A</span>
+        </div>
+        <div class="timer-box hidden" id="tutti-frutti-timer-box">
+          <span class="label">TIEMPO</span>
+          <span id="tf-seconds" class="time-big text-danger">15</span>
+        </div>
+      </div>
+
+      <div class="glass-card game-grid-card">
+        <div class="table-responsive">
+          <table id="game-table" class="game-table">
+            <thead>
+              <tr id="game-table-header">
+                <!-- Populated via JS -->
+              </tr>
+            </thead>
+            <tbody>
+              <tr id="game-table-row">
+                <!-- Inputs populated via JS -->
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="players-status">
+          <h4>Estado:</h4>
+          <div id="status-badges" class="status-badges">
+            <!-- Status badges populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="game-footer">
+        <button id="btn-tutti-frutti" class="btn btn-primary btn-huge shake-hover">¡TUTTI FRUTTI! 🍊</button>
+      </div>
+
+      <!-- Overlay for Tutti Frutti Countdown -->
+      <div id="tf-overlay" class="overlay hidden">
+        <div class="overlay-content glass-card">
+          <h2 id="tf-caller-name">¡Alguien cantó!</h2>
+          <p>Tenés <span id="tf-overlay-seconds" class="text-accent text-bold">10</span> segundos para terminar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 5: ROUND RESULTS -->
+    <section id="screen-results" class="screen hidden">
+      <div class="glass-card results-card">
+        <h2>Resultados de la Ronda</h2>
+        <h3 class="results-subtitle">Letra: <span id="results-letter" class="text-accent">A</span></h3>
+        
+        <div class="table-responsive mt-1rem">
+          <table class="results-table">
+            <thead id="results-table-header">
+              <!-- Populated via JS -->
+            </thead>
+            <tbody id="results-table-body">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="leaderboard-preview mt-1rem">
+          <h4>Puntajes Parciales</h4>
+          <ul id="partial-leaderboard" class="compact-leaderboard">
+            <!-- Populated via JS -->
+          </ul>
+        </div>
+
+        <div class="results-actions mt-1rem">
+          <p id="waiting-next-round" class="waiting-message hidden">Esperando al host...</p>
+          <button id="btn-next-round" class="btn btn-primary btn-large hidden">SIGUIENTE RONDA →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 6: GAME OVER -->
+    <section id="screen-gameover" class="screen hidden">
+      <div class="glass-card gameover-card">
+        <h2>¡Partida Terminada!</h2>
+        
+        <!-- Podium -->
+        <div class="podium-container">
+          <div class="podium-place place-2" id="podium-2">
+            <div class="podium-avatar">🥈</div>
+            <div class="podium-name">...</div>
+            <div class="podium-score">0 pts</div>
+            <div class="podium-block">2</div>
+          </div>
+          <div class="podium-place place-1" id="podium-1">
+            <div class="podium-avatar">👑</div>
+            <div class="podium-name">...</div>
+            <div class="podium-score">0 pts</div>
+            <div class="podium-block">1</div>
+          </div>
+          <div class="podium-place place-3" id="podium-3">
+            <div class="podium-avatar">🥉</div>
+            <div class="podium-name">...</div>
+            <div class="podium-score">0 pts</div>
+            <div class="podium-block">3</div>
+          </div>
+        </div>
+
+        <div class="final-scores mt-1rem">
+          <h3>Todos los puntajes</h3>
+          <ul id="final-leaderboard" class="final-leaderboard">
+            <!-- Populated via JS -->
+          </ul>
+        </div>
+
+        <div class="button-group mt-1rem">
+          <button id="btn-new-game" class="btn btn-primary btn-large hidden">NUEVA PARTIDA</button>
+          <button id="btn-back-home" class="btn btn-secondary btn-large">VOLVER AL INICIO</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/dictionary.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
