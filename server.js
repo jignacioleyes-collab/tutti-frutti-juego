@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,7 +24,25 @@ try {
   }
 }
 
+// Serve static files from multiple possible directory locations
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'Public')));
+app.use(express.static(__dirname));
+
+// Route handler for root /
+app.get('/', (req, res) => {
+  const possiblePaths = [
+    path.join(__dirname, 'public', 'index.html'),
+    path.join(__dirname, 'Public', 'index.html'),
+    path.join(__dirname, 'index.html')
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      return res.sendFile(p);
+    }
+  }
+  res.status(404).send('index.html no encontrado');
+});
 
 const PORT = process.env.PORT || 3000;
 const VALID_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','R','S','T','U','V'];
