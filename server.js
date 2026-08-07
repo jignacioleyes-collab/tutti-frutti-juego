@@ -7,7 +7,21 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const { isValidCategoryWord } = require('./public/js/dictionary.js');
+let isValidCategoryWord;
+try {
+  isValidCategoryWord = require(path.join(__dirname, 'public', 'js', 'dictionary.js')).isValidCategoryWord;
+} catch (e1) {
+  try {
+    isValidCategoryWord = require('./public/js/dictionary.js').isValidCategoryWord;
+  } catch (e2) {
+    try {
+      isValidCategoryWord = require('./dictionary.js').isValidCategoryWord;
+    } catch (e3) {
+      console.warn('Warning: dictionary.js not found at standard path, using fallback validation.');
+      isValidCategoryWord = (text, cat, letter) => !!(text && letter && text.trim().toLowerCase().startsWith(letter.toLowerCase()));
+    }
+  }
+}
 
 app.use(express.static(path.join(__dirname, 'public')));
 
